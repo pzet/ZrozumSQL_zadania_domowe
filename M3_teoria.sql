@@ -9,7 +9,7 @@ ALTER SCHEMA training RENAME TO training_zs;
 -- 3. Korzystaj¹c z konstrukcji <nazwa_schematy>.<nazwa_tabeli> lub ³¹cz¹c siê do schematu
 --    training_zs, utwórz tabelê wed³ug opisu.
 
-CREATE TABLE training_zs.products (
+CREATE TABLE training_zs.manufacturing_date (
 	id INTEGER,
 	production_qty NUMERIC(10, 2),
 	product_name VARCHAR(100),
@@ -25,7 +25,7 @@ ALTER TABLE training_zs.products ADD PRIMARY KEY (id);
 
 -- 5. Korzystaj¹c ze sk³adni IF EXISTS spróbuj usun¹æ tabelê sales ze schematu training_zs
 
-DROP TABLE IF EXISTS sales;
+DROP TABLE IF EXISTS training_zs.sales;
 
 -- 6. W schemacie training_zs, utwórz now¹ tabelê sales wed³ug opisu.
 
@@ -33,17 +33,16 @@ CREATE TABLE training_zs.sales (
 	id INTEGER PRIMARY KEY,
 	sales_date TIMESTAMP NOT NULL,
 	sales_amount NUMERIC(38, 2),
-	CONSTRAINT sales_over_1k CHECK (sales_amount > 1000),
 	sales_qty numeric(10, 2),
 	product_id integer,
-	added_by TEXT DEFAULT 'admin'
+	added_by TEXT DEFAULT 'admin',
+	CONSTRAINT sales_over_1k CHECK (sales_amount > 1000)
 );
 
 -- 7. Korzystaj¹c z operacji ALTER utwórz powi¹zanie miêdzy tabel¹ sales a products, jako klucz obcy
 -- pomiêdzy atrybutami product_id z tabeli sales i id z tabeli products
 
 ALTER TABLE training_zs.sales ADD CONSTRAINT product_id_fk FOREIGN KEY (product_id) REFERENCES training_zs.products (id) ON DELETE CASCADE;
-
 
 -- 8. Korzystaj¹c z polecenia DROP i opcji CASCADE usuñ schemat training_zs
 
