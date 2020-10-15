@@ -42,7 +42,7 @@ CREATE TABLE training_zs.sales (
 -- 7. Korzystaj¹c z operacji ALTER utwórz powi¹zanie miêdzy tabel¹ sales a products, jako klucz obcy
 -- pomiêdzy atrybutami product_id z tabeli sales i id z tabeli products
 
-ALTER TABLE training_zs.sales ADD CONSTRAINT product_id_fk FOREIGN KEY (product_id) REFERENCES products (id) ON DELETE CASCADE;
+ALTER TABLE training_zs.sales ADD CONSTRAINT product_id_fk FOREIGN KEY (product_id) REFERENCES training_zs.products (id) ON DELETE CASCADE;
 
 
 -- 8. Korzystaj¹c z polecenia DROP i opcji CASCADE usuñ schemat training_zs
