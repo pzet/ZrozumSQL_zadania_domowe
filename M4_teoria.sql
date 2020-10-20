@@ -27,18 +27,34 @@ DROP ROLE user_training;
 --  - Dostêp do tworzenia obiektów w schemacie training
 --  - Dostêp do wszystkich uprawnieñ dla wszystkich tabel w schemacie training
 
-
 CREATE ROLE reporting_ro;
-GRANT CONNECT ON DATABASE postgres TO reporting ro;
-GRANT USAGE ON SCHEMA training TO reporting_ro;
-GRANT CREATE ON SCHEMA training TO reporting_ro; 
+GRANT CONNECT ON DATABASE postgres TO reporting_ro;
+GRANT USAGE, CREATE ON SCHEMA training TO reporting_ro; 
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA training TO reporting_ro;
 
 -- 6. Utwórz nowego u¿ytkownika reporting_user z mo¿liwoœci¹ logowania siê do bazy danych i
 --    haœle silnym :) (coœ wymyœl). Przypisz temu u¿ytkownikowi role reporting ro;
 
-CREATE ROLE reporting_user;
-GRANT CONNECT ON DATABASE
+CREATE ROLE reporting_user WITH LOGIN PASSWORD 'Parost4tkiemWPi3knyRejs';
+GRANT reporting_ro TO reporting_user;
 
+-- 7. Bêd¹c zalogowany na u¿ytkownika reporting_user, spróbuj utworzyæ now¹ tabele (dowoln¹)
+--    w schemacie training.
+
+CREATE TABLE training.test1 (id INTEGER); 
+---- kod wykonany jako reporting_user - tabela utworzona
+
+-- 8. Zabierz uprawnienia roli reporting_ro do tworzenia obiektów w schemacie training;
+
+REVOKE CREATE ON SCHEMA training FROM reporting_ro;
+
+-- 9. Zaloguj siê ponownie na u¿ytkownika reporting_user, sprawdŸ czy mo¿esz utworzyæ now¹
+--    tabelê w schemacie training oraz czy mo¿esz tak¹ tabelê utworzyæ w schemacie public
+
+CREATE TABLE training.test2;
+---- kod wykonany jako reporting_user - odmowa dostêpu przy tworzeniu tabeli
+
+CREATE TABLE test3 (id INTEGER);
+---- kod wykonany jako reporting_user - tabela utworzona
 
 
