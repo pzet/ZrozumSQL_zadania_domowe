@@ -56,5 +56,3 @@ CREATE TABLE training.test2;
 
 CREATE TABLE test3 (id INTEGER);
 ---- kod wykonany jako reporting_user - tabela utworzona
-
-
