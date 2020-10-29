@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS dml_exercises.sales (
 	sales_amount numeric(38, 2),
 	sales_qty numeric(10, 2),
 	added_by text DEFAULT 'admin',
-	CONSTRAINT sales_less_1k CHECK (sales_amount <= 1000)
+	CONSTRAINT sales_less_1k CHECK (sales_amount < 1000)
 );
 
 -- 3. Dodaj to tabeli kilka wierszy korzystając ze składni INSERT INTO
@@ -23,8 +23,8 @@ CREATE TABLE IF NOT EXISTS dml_exercises.sales (
 INSERT INTO dml_exercises.sales (sales_date, sales_amount, sales_qty, added_by)
      VALUES ('27/10/2020', 600, 30, 'salesman_1'),
      		('28/10/2020', 880, 44, NULL),
-     		('29/10/2020', 1000, 10, 'salesman_3'),
-     		('30/10/2020', 1200, 10, 'salesman_1'); -- ostatni wiersz uniemożliwa dodanie rekordów - naruszenie ograniczenia
+     		('29/10/2020', 999, 10, 'salesman_3'),
+     		('30/10/2020', 1001, 10, 'salesman_1'); -- ostatni wiersz uniemożliwa dodanie rekordów - naruszenie ograniczenia
 
 -- 4. Co zostanie wstawione, jako format godzina (HH), minuta (MM), sekunda (SS), w polu
 --    sales_date, jak wstawimy do tabeli następujący rekord.
@@ -39,9 +39,16 @@ INSERT INTO dml_exercises.sales (sales_date, sales_amount,sales_qty, added_by)
 
 INSERT INTO dml_exercises.sales (sales_date, sales_amount,sales_qty, added_by)
      VALUES ('04/04/2020', 101, 50, NULL);
-     -- 2020-04-04 00:00:00. Interpretacja poprzez zajrzenie do dokumentacji formatu timestamp
-
+     -- 2020-04-04 00:00:00.
+     
+     -- Sprawdzenie formatu daty:
+     --- opcja 1
+     
 SHOW datestyle;
+
+	 --- opcja 2
+	 
+SELECT TO_CHAR('04/04/2020' :: DATE, 'Mon dd, yyyy');
 
 
 -- 6. Dodaj do tabeli sales wstaw wiersze korzystając z poniższego polecenia
@@ -54,12 +61,33 @@ SHOW datestyle;
     FROM generate_series(1, 20000) s(i);
 
 
---7. Korzystając ze składni UPDATE, zaktualizuj atrybut added_by, wpisując mu wartość
---'sales_over_200', gdy wartość sprzedaży (sales_amount jest większa lub równa 200)
---8. Korzystając ze składni DELETE, usuń te wiersze z tabeli sales, dla których wartość w polu
---added_by jest wartością nieokreśloną NULL. Sprawdź różnicę między zapisemm added_by =
---NULL, a added_by IS NULL
---9. Wyczyść wszystkie dane z tabeli sales i zrestartuj sekwencje
---10. DODATKOWE ponownie wstaw do tabeli sales wiersze jak w zadaniu 4.
---Utwórz kopię zapasową tabeli do pliku. Następnie usuń tabelę ze schematu dml_exercises i
---odtwórz ją z kopii zapasowej
+-- 7. Korzystając ze składni UPDATE, zaktualizuj atrybut added_by, wpisując mu wartość
+--    'sales_over_200', gdy wartość sprzedaży (sales_amount jest większa lub równa 200)
+
+SELECT * FROM dml_exercises.sales  
+   
+UPDATE dml_exercises.sales
+   SET added_by = 'sales_over_200'
+ WHERE sales_amount >= 200;
+
+-- 8. Korzystając ze składni DELETE, usuń te wiersze z tabeli sales, dla których wartość w polu
+--    added_by jest wartością nieokreśloną NULL. Sprawdź różnicę między zapisemm added_by =
+--    NULL, a added_by IS NULL
+
+DELETE FROM dml_exercises.sales 
+      WHERE added_by = NULL; 
+--- updated rows: 0
+--- wyjaśnienie: NULL nie jest wartością, dlatego nie operacja logiczna zwróci NULL (np. NULL = NULL zwraca NULL)
+
+DELETE FROM dml_exercises.sales
+      WHERE added_by IS NULL;
+--- updated rows: 8019
+
+     
+-- 9. Wyczyść wszystkie dane z tabeli sales i zrestartuj sekwencje
+
+DELETE FROM dml_exercises.sales;
+
+-- 10. DODATKOWE ponownie wstaw do tabeli sales wiersze jak w zadaniu 4.
+--     Utwórz kopię zapasową tabeli do pliku. Następnie usuń tabelę ze schematu dml_exercises i
+--     odtwórz ją z kopii zapasowej
