@@ -23,15 +23,22 @@ CREATE TABLE IF NOT EXISTS dml_exercises.sales (
 INSERT INTO dml_exercises.sales (sales_date, sales_amount, sales_qty, added_by)
      VALUES ('27/10/2020', 600, 30, 'salesman_1'),
      		('28/10/2020', 880, 44, NULL),
-     		('29/10/2020', 999, 10, 'salesman_3'),
-     		('30/10/2020', 1001, 10, 'salesman_1'); -- ostatni wiersz uniemożliwa dodanie rekordów - naruszenie ograniczenia
+     		('29/10/2020', 999, 10, 'salesman_3');
+     	
+INSERT INTO dml_exercises.sales (sales_date, sales_amount, sales_qty, added_by)
+ 	 VALUES ('30/10/2020', 1001, 10, 'salesman_1'); -- rekord narusza ograniczenie sprawdzające 
 
 -- 4. Co zostanie wstawione, jako format godzina (HH), minuta (MM), sekunda (SS), w polu
 --    sales_date, jak wstawimy do tabeli następujący rekord.
  
 INSERT INTO dml_exercises.sales (sales_date, sales_amount,sales_qty, added_by)
      VALUES ('20/11/2019', 101, 50, NULL);
-    -- 2019-11-20 00:00:00
+
+SELECT sales_date FROM dml_exercises.sales
+ WHERE sales_amount = 101 
+   AND sales_qty = 50;
+--- format: 2019-11-20 00:00:00
+
 
 
 -- 5. Jaka będzie wartość w atrybucie sales_date, po wstawieniu wiersza jak poniżej. Jak
@@ -42,6 +49,7 @@ INSERT INTO dml_exercises.sales (sales_date, sales_amount,sales_qty, added_by)
      -- 2020-04-04 00:00:00.
      
      -- Sprawdzenie formatu daty:
+     
      --- opcja 1
      
 SHOW datestyle;
@@ -52,13 +60,13 @@ SELECT TO_CHAR('04/04/2020' :: DATE, 'Mon dd, yyyy');
 
 
 -- 6. Dodaj do tabeli sales wstaw wiersze korzystając z poniższego polecenia
---
-    INSERT INTO dml_exercises.sales (sales_date, sales_amount, sales_qty,added_by)
-    SELECT NOW() + (random() * (interval '90 days')) + '30 days',
-    random() * 500 + 1,
-    random() * 100 + 1,
-    NULL
-    FROM generate_series(1, 20000) s(i);
+
+INSERT INTO dml_exercises.sales (sales_date, sales_amount, sales_qty,added_by)
+     SELECT NOW() + (random() * (interval '90 days')) + '30 days',
+            random() * 500 + 1,
+            random() * 100 + 1,
+            NULL
+       FROM generate_series(1, 20000) s(i);
 
 
 -- 7. Korzystając ze składni UPDATE, zaktualizuj atrybut added_by, wpisując mu wartość
@@ -79,6 +87,7 @@ DELETE FROM dml_exercises.sales
 --- updated rows: 0
 --- wyjaśnienie: NULL nie jest wartością, dlatego nie operacja logiczna zwróci NULL (np. NULL = NULL zwraca NULL)
 
+     
 DELETE FROM dml_exercises.sales
       WHERE added_by IS NULL;
 --- updated rows: 8019
@@ -86,7 +95,7 @@ DELETE FROM dml_exercises.sales
      
 -- 9. Wyczyść wszystkie dane z tabeli sales i zrestartuj sekwencje
 
-DELETE FROM dml_exercises.sales;
+TRUNCATE TABLE dml_exercises.sales RESTART IDENTITY;
 
 -- 10. DODATKOWE ponownie wstaw do tabeli sales wiersze jak w zadaniu 4.
 --     Utwórz kopię zapasową tabeli do pliku. Następnie usuń tabelę ze schematu dml_exercises i
