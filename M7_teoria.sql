@@ -56,11 +56,13 @@ INSERT INTO sales (sal_description, sal_date, sal_value, sal_prd_id)
 --     powstały w regionie EMEA. Wyniki ogranicz do 100 wierszy.
 
       WITH products_products_manufactured_region AS 
-	    (SELECT p.*,
-		        pmr.region_name
-	       FROM products p
-	 INNER JOIN product_manufactured_region pmr ON p.product_man_region = pmr.id
-	      WHERE pmr.region_name = 'EMEA')
+	       (
+	       SELECT p.*,
+		          pmr.region_name
+	         FROM products p
+	   INNER JOIN product_manufactured_region pmr ON p.product_man_region = pmr.id
+	        WHERE pmr.region_name = 'EMEA'
+	       )
     SELECT ppmr.product_name,
 		   ppmr.product_code,
 		   ppmr.region_name,
@@ -74,7 +76,7 @@ INSERT INTO sales (sal_description, sal_date, sal_value, sal_prd_id)
 INNER JOIN products_products_manufactured_region ppmr ON s.sal_prd_id = ppmr.id
      LIMIT 100;
 
--- wydaje mi się, że można to zapytanie napisać bardziej zwięźle?
+-- wydaje mi się, że pewnie istnieje bardziej zwięzły sposób, żeby otrzymać ten sam rezultat? :)
 
 	 
 -- 2. Korzystając z konstrukcji LEFT JOIN połącz dane o produktach (PRODUCTS,
@@ -108,7 +110,7 @@ LEFT JOIN product_manufactured_region pmr
 		         pmr.established_year
 	   	    FROM product_manufactured_region pmr
  	       WHERE pmr.established_year > 2012
- 	     )
+ 	      )
    SELECT p.*,
 	      pmr2.region_name
      FROM products p
@@ -136,12 +138,14 @@ RIGHT JOIN sales s ON p.id = s.sal_prd_id
 --    zostały one stworzone (PRODUCT_MANUFACTURED_REGION, id)
 --    Wyświetl w wynikach wszystkie atrybuty z obu tabel.
 
-WITH product_manufactured_region_new AS 
-	(INSERT INTO product_manufactured_region (region_name, region_code, established_year)
-		  VALUES ('Mars', 'MRS', 2077)
-	   RETURNING *)
-SELECT *
-FROM products p
+     WITH product_manufactured_region_new AS 
+	      (
+	      INSERT INTO product_manufactured_region (region_name, region_code, established_year)
+		       VALUES ('Mars', 'MRS', 2077)
+	        RETURNING *
+	      )
+   SELECT *
+     FROM products p
 FULL JOIN product_manufactured_region pmr ON p.product_man_region = pmr.id;
 
 -- wykonując to zapytanie wiele razy, każde wykonanie dodaje nowy wiersz z tymi samymi danymi (region_name,
@@ -196,29 +200,31 @@ RIGHT JOIN pmr_temp pmrt ON p.product_man_region = pmrt.id
  
 -- to samo zapytanie w wersji z CTE
 WITH prod_temp AS 
-    (
-	SELECT p.id AS product_id,
-           p.product_name,
-   	       p.product_code,
-           p.product_quantity,
-           p.manufactured_date,
-           p.product_man_region,
-           p.added_by,
-           p.created_date
-      FROM products p
+     (
+	 SELECT p.id AS product_id,
+            p.product_name,
+   	        p.product_code,
+            p.product_quantity,
+            p.manufactured_date,
+            p.product_man_region,
+            p.added_by,
+            p.created_date
+       FROM products p
       ),
       pmr_nr AS 
       (
       INSERT INTO product_manufactured_region (region_name, region_code, established_year)
-      VALUES ('Mars', 'MRS', 2077)
-      RETURNING *
+           VALUES ('Mars', 'MRS', 2077)
+        RETURNING *
       )
-SELECT * FROM prod_temp
-LEFT JOIN product_manufactured_region pmr ON prod_temp.product_man_region = pmr.id
-UNION
-SELECT * FROM prod_temp
+    SELECT * 
+      FROM prod_temp
+ LEFT JOIN product_manufactured_region pmr ON prod_temp.product_man_region = pmr.id
+     UNION
+    SELECT * 
+      FROM prod_temp
 RIGHT JOIN product_manufactured_region pmr ON prod_temp.product_man_region = pmr.id
-ORDER BY product_id, id;
+  ORDER BY product_id, id;
 
 
 -- 7. Wykorzystaj konstrukcję WITH i zmień Twoje zapytanie z zadania 4 w taki sposób, aby
@@ -228,9 +234,9 @@ ORDER BY product_id, id;
       WITH prod_quantity_over_5 AS 
 	       (
 	       SELECT *
-	       FROM products
-	       WHERE product_quantity > 5 AND 
-	       product_name IS NOT NULL
+	         FROM products
+	        WHERE product_quantity > 5 
+	          AND product_name IS NOT NULL
 	       )
     SELECT pq5.product_name,
 	       EXTRACT(YEAR FROM s.sal_date) || '-' || EXTRACT(MONTH FROM s.sal_date) sal_year_month
@@ -243,8 +249,8 @@ RIGHT JOIN prod_quantity_over_5 pq5 ON s.sal_prd_id = pq5.id;
 
  DELETE FROM products p
 WHERE EXISTS (
-		     SELECT *
-			 FROM products p
+		        SELECT *
+			      FROM products p
              LEFT JOIN product_manufactured_region pmr ON pmr.id = p.product_man_region
              )
    RETURNING *;
@@ -258,6 +264,7 @@ WITH RECURSIVE fibonacci(i, j, k) AS
 	  UNION
 	 SELECT i + 1, k, k + j
 	   FROM fibonacci
-	  WHERE i < 99
+	  WHERE k + j < 100
 	 )
- SELECT * FROM fibonacci;
+SELECT * 
+  FROM fibonacci;
