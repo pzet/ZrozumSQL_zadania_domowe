@@ -76,8 +76,16 @@ INSERT INTO sales (sal_description, sal_date, sal_value, sal_prd_id)
 INNER JOIN products_products_manufactured_region ppmr ON s.sal_prd_id = ppmr.id
      LIMIT 100;
 
--- wydaje mi się, że pewnie istnieje bardziej zwięzły sposób, żeby otrzymać ten sam rezultat? :)
+-- wersja poprawiona (CTE jest niepotrzebne przy krótkich zapytaniach):
 
+      SELECT s.*,
+	         p.*,
+	         pmr.*
+        FROM sales s
+  INNER JOIN products p ON s.sal_prd_id = p.id
+  INNER JOIN product_manufactured_region pmr ON p.product_man_region = pmr.id
+               								    AND pmr.region_name = 'EMEA'
+       LIMIT 100;
 	 
 -- 2. Korzystając z konstrukcji LEFT JOIN połącz dane o produktach (PRODUCTS,
 --    product_man_region) z danymi o regionach w których produkty powstały
@@ -88,10 +96,9 @@ INNER JOIN products_products_manufactured_region ppmr ON s.sal_prd_id = ppmr.id
 --    roku.
 
    SELECT p.*,
-	      pmr.region_name 
+	      pmr.region_name
      FROM products p
-LEFT JOIN product_manufactured_region pmr 
-	   ON p.product_man_region = pmr.id
+LEFT JOIN product_manufactured_region pmr ON p.product_man_region = pmr.id
 	  AND pmr.established_year > 2012;
 
 
@@ -116,6 +123,18 @@ LEFT JOIN product_manufactured_region pmr
      FROM products p
 LEFT JOIN product_manufactured_region pmr2 ON p.product_man_region = pmr2.id;
 
+-- poprawione zapytanie:
+
+   SELECT *
+     FROM products p
+LEFT JOIN product_manufactured_region pmr ON pmr.id = p.product_man_region
+    WHERE pmr.established_year > 2012; 
+   
+-- różnice pomiędzy zapytaniem z zad. 2: w podzapytaniu z zad. 2 dostajemy tabelę, w której
+-- w region_name znajdują się wartości nieokreślone - LEFT JOIN pozostawia wszystkie wiersze
+-- z tabeli products. Użycie WHERE filtruje je, usuwając wartości nieokreślone i pozostawiając
+-- tylko jeden region z established_year spełniającym zadany warunek.
+
 -- 4. Korzystając z konstrukcji RIGHT JOIN połącz dane sprzedażowe (SALES, sal_prd_id) z
 --    podzapytaniem, w których dla danych produktowych uwzględnij tylko te produkty
 --    (PRODUCTS, id), których ilość jednostek jest większa od 5 (product_quantity).
@@ -129,6 +148,17 @@ LEFT JOIN product_manufactured_region pmr2 ON p.product_man_region = pmr2.id;
       FROM products p
 RIGHT JOIN sales s ON p.id = s.sal_prd_id
      WHERE p.product_quantity > 5
+  ORDER BY 1 DESC;
+
+-- poprawione zapytanie
+
+    SELECT DISTINCT prd.product_name,
+	       prd.product_quantity,
+	       EXTRACT(YEAR FROM s.sal_date) || '_' || EXTRACT(MONTH FROM s.sal_date) sale_month
+      FROM sales s
+RIGHT JOIN (SELECT p.*
+              FROM products p
+             WHERE p.product_quantity > 5) prd ON s.sal_prd_id = prd.id
   ORDER BY 1 DESC;
 
 
@@ -148,6 +178,24 @@ RIGHT JOIN sales s ON p.id = s.sal_prd_id
      FROM products p
 FULL JOIN product_manufactured_region pmr ON p.product_man_region = pmr.id;
 
+-- poprawione zapytanie (BŁĄD: INSERT posiada więcej docelowych kolumn niż wyrażeń)
+     WITH product_manufactured_region_new AS 
+	      (
+	      INSERT INTO product_manufactured_region (region_name, region_code, established_year)
+		       SELECT ('Mars', 'MRS', 2077)
+		       WHERE NOT EXISTS 
+		                        (
+		                        SELECT *
+		                          FROM product_manufactured_region pmr2
+		                         WHERE pmr2.region_name = 'Mars'
+		                       )
+	        RETURNING *
+	      )
+   SELECT *
+     FROM products p
+FULL JOIN product_manufactured_region pmr ON p.product_man_region = pmr.id;
+	
+
 -- wykonując to zapytanie wiele razy, każde wykonanie dodaje nowy wiersz z tymi samymi danymi (region_name,
 -- region_code, established_year) - jak tego uniknąć?
 
@@ -155,7 +203,7 @@ FULL JOIN product_manufactured_region pmr ON p.product_man_region = pmr.id;
 --    korzystaj ze składni FULL JOIN. Wykorzystaj INNER JOIN / LEFT / RIGHT JOIN lub
 --    inne części SQL-a, które znasz :)
 
--- stworz kopie tablie product_manufactured_region na potrzebę zadania
+-- stworz kopie tabeli product_manufactured_region na potrzebę zadania
 DROP TABLE IF EXISTS pmr_temp;
 
 CREATE TABLE pmr_temp (
@@ -225,6 +273,25 @@ WITH prod_temp AS
       FROM prod_temp
 RIGHT JOIN product_manufactured_region pmr ON prod_temp.product_man_region = pmr.id
   ORDER BY product_id, id;
+ 
+-- poprawione zapytanie
+    SELECT p.*,
+           pmr.*
+      FROM products p
+      JOIN product_manufactured_region pmr ON pmr.id = p.product_man_region
+     UNION 
+    SELECT p.*,
+           pmr.*
+      FROM products p
+ LEFT JOIN product_manufactured_region pmr ON pmr.id = p.product_man_region
+     WHERE pmr.id IS NULL
+     UNION
+    SELECT p.*,
+	       pmr.*
+      FROM products p
+RIGHT JOIN product_manufactured_region pmr ON pmr.id = p.product_man_region
+     WHERE p.id IS NULL;
+
 
 
 -- 7. Wykorzystaj konstrukcję WITH i zmień Twoje zapytanie z zadania 4 w taki sposób, aby
@@ -238,10 +305,11 @@ RIGHT JOIN product_manufactured_region pmr ON prod_temp.product_man_region = pmr
 	        WHERE product_quantity > 5 
 	          AND product_name IS NOT NULL
 	       )
-    SELECT pq5.product_name,
+    SELECT DISTINCT pq5.product_name,
 	       EXTRACT(YEAR FROM s.sal_date) || '-' || EXTRACT(MONTH FROM s.sal_date) sal_year_month
       FROM sales s
-RIGHT JOIN prod_quantity_over_5 pq5 ON s.sal_prd_id = pq5.id;
+RIGHT JOIN prod_quantity_over_5 pq5 ON s.sal_prd_id = pq5.id
+  ORDER BY sal_year_month;
 
 -- 8. Usuń wszystkie te produkty (PRODUCTS), które są przypisane do regionu EMEA i kodu
 --    E_EMEA.
@@ -251,7 +319,16 @@ RIGHT JOIN prod_quantity_over_5 pq5 ON s.sal_prd_id = pq5.id;
 WHERE EXISTS (
 		        SELECT *
 			      FROM products p
-             LEFT JOIN product_manufactured_region pmr ON pmr.id = p.product_man_region
+                  JOIN product_manufactured_region pmr ON pmr.id = p.product_man_region
+             )
+   RETURNING *;
+  
+-- poprawione zapytanie
+ DELETE FROM products p
+WHERE EXISTS (
+		        SELECT 1 -- 1 ponieważ nie pobieramy wówczas żadnych kolumn
+			      FROM products p1
+             LEFT JOIN product_manufactured_region pmr ON pmr.id = p1.product_man_region
              )
    RETURNING *;
 
@@ -266,5 +343,5 @@ WITH RECURSIVE fibonacci(i, j, k) AS
 	   FROM fibonacci
 	  WHERE k + j < 100
 	 )
-SELECT * 
+SELECT k AS fibonacci_number
   FROM fibonacci;
