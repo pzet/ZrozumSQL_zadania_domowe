@@ -178,19 +178,22 @@ RIGHT JOIN (SELECT p.*
      FROM products p
 FULL JOIN product_manufactured_region pmr ON p.product_man_region = pmr.id;
 
--- poprawione zapytanie (BŁĄD: INSERT posiada więcej docelowych kolumn niż wyrażeń)
-     WITH product_manufactured_region_new AS 
-	      (
-	      INSERT INTO product_manufactured_region (region_name, region_code, established_year)
-		       SELECT ('Mars', 'MRS', 2077)
-		       WHERE NOT EXISTS 
-		                        (
-		                        SELECT *
-		                          FROM product_manufactured_region pmr2
-		                         WHERE pmr2.region_name = 'Mars'
-		                       )
-	        RETURNING *
-	      )
+-- poprawione zapytanie 
+WITH product_manufactured_region_new AS 
+      (
+      INSERT INTO product_manufactured_region
+      			 (region_name, region_code, established_year)
+	       SELECT new_r.*
+	         FROM (
+	         	VALUES ('Mars', 'MRS', 2077)
+	         ) new_r (region_name, region_code, established_year)	         
+	       WHERE NOT EXISTS (
+	                        SELECT 1
+	                          FROM product_manufactured_region pmr2
+	                         WHERE pmr2.region_name = new_r.region_name
+	                       )
+        RETURNING *
+      )
    SELECT *
      FROM products p
 FULL JOIN product_manufactured_region pmr ON p.product_man_region = pmr.id;
