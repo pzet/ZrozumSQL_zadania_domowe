@@ -4,16 +4,21 @@
 --    średniej malejąco.
 
    SELECT pmr.region_name,
-          avg(p.product_quantity) avg_quantity
+          avg(p.product_quantity) avg_prod_quantity
      FROM products p
-LEFT JOIN product_manufactured_region pmr ON pmr.id = p.product_man_region
+     JOIN product_manufactured_region pmr ON pmr.id = p.product_man_region
  GROUP BY pmr.region_name
- ORDER BY avg_quantity DESC;
+ ORDER BY avg_prod_quantity DESC;
 
 -- 2. Korzystając z funkcji STRING_AGG, dla każdej nazwy regionu z tabeli
 --    PRODUCT_MANUFACTURED_REGION stwórz listę nazw produktów (product_name)
 --    w tych regionach. Sprawdź czy wewnątrz funkcji STRING_AGG możesz użyć ORDER
 --    BY i jak ewentualnie to wpłynie na wyniki?
+
+SELECT *
+FROM product_manufactured_region pmr
+
+SELECT * FROM products p 
 
 -- 3. Wyświetl ilość sprzedanych produktów COUNT(s.sal_prd_id), które wzięły udział w
 --    transakcjach sprzedażowych, filtrując dane jedynie do regionu EMEA, według tabeli
@@ -36,8 +41,9 @@ LEFT JOIN product_manufactured_region pmr ON pmr.id = p.product_man_region
 --    W wynikach wyświetl: PRODUCT_NAME, PRODUCT_CODE,
 --    MANUFACTURED_DATE, PRODUCT_MAN_REGION, REGION_NAME i obliczoną
 --    sumę.
---7. Na podstawie zapytania i wyników z zadania 6. Stwórz ranking według posiadanej ilości
---produktów od największej do najmniejszej, w taki sposób, aby w rankingu nie było
---brakujących elementów (liczb). W wyniku wyświetl te produkty, których ilość jest 2
---największą ilością. Atrybuty do wyświetlenia, PRODUCT_NAME, REGION_NAME,
+
+-- 7. Na podstawie zapytania i wyników z zadania 6. Stwórz ranking według posiadanej ilości
+--    produktów od największej do najmniejszej, w taki sposób, aby w rankingu nie było
+--    brakujących elementów (liczb). W wyniku wyświetl te produkty, których ilość jest 2
+--    największą ilością. Atrybuty do wyświetlenia, PRODUCT_NAME, REGION_NAME,
 --suma ilości per region (obliczona w zadaniu 6)
