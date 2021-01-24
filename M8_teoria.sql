@@ -3,6 +3,13 @@
 --    tylko nazwę regionu (REGION_NAME) i obliczoną średnią. Dane posortuj według
 --    średniej malejąco.
 
+   SELECT pmr.region_name,
+          avg(p.product_quantity) avg_quantity
+     FROM products p
+LEFT JOIN product_manufactured_region pmr ON pmr.id = p.product_man_region
+ GROUP BY pmr.region_name
+ ORDER BY avg_quantity DESC;
+
 -- 2. Korzystając z funkcji STRING_AGG, dla każdej nazwy regionu z tabeli
 --    PRODUCT_MANUFACTURED_REGION stwórz listę nazw produktów (product_name)
 --    w tych regionach. Sprawdź czy wewnątrz funkcji STRING_AGG możesz użyć ORDER
