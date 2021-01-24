@@ -15,10 +15,12 @@
 --    w tych regionach. Sprawdź czy wewnątrz funkcji STRING_AGG możesz użyć ORDER
 --    BY i jak ewentualnie to wpłynie na wyniki?
 
-SELECT *
-FROM product_manufactured_region pmr
 
-SELECT * FROM products p 
+   SELECT pmr.region_name, 
+          string_agg(product_code, ', ') 
+     FROM product_manufactured_region pmr
+LEFT JOIN products p ON pmr.id = p.product_man_region 
+ GROUP BY pmr.region_name;
 
 -- 3. Wyświetl ilość sprzedanych produktów COUNT(s.sal_prd_id), które wzięły udział w
 --    transakcjach sprzedażowych, filtrując dane jedynie do regionu EMEA, według tabeli
