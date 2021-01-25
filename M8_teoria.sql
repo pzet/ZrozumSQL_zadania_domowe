@@ -35,6 +35,15 @@ LEFT JOIN product_manufactured_region pmr ON pmr.id = p.product_man_region
 --    region (REGION_NAME), nazwa produktu (PRODUCT_NAME) oraz całkowita liczba z
 --    danych sprzedażowych.
 
+ SELECT  pmr.region_name,
+         p.product_name,
+         count(s.sal_prd_id) product_sales
+    FROM sales s
+    JOIN products p ON p.id = s.sal_prd_id
+    JOIN product_manufactured_region pmr ON pmr.id = p.product_man_region 
+	                                    AND pmr.region_name = 'EMEA'
+GROUP BY (pmr.region_name, p.product_name);
+
 -- 4. Wyświetl sumę sprzedaży na podstawie danych sprzedażowych (SALES) w podziale na
 --    nowy atrybut ROK_MIESIAC stworzony na podstawie kolumny SAL_DATE. Dane
 --    wynikowe posortuj od największej do najmniejszej sprzedaży.
