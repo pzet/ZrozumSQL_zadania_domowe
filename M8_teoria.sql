@@ -15,11 +15,18 @@
 --    w tych regionach. Sprawdź czy wewnątrz funkcji STRING_AGG możesz użyć ORDER
 --    BY i jak ewentualnie to wpłynie na wyniki?
 
+   SELECT pmr.region_name,
+          string_agg(product_code, ', ') product_code
+     FROM products p
+LEFT JOIN product_manufactured_region pmr ON pmr.id = p.product_man_region 
+ GROUP BY pmr.region_name;
 
-   SELECT pmr.region_name, 
-          string_agg(product_code, ', ') 
-     FROM product_manufactured_region pmr
-LEFT JOIN products p ON pmr.id = p.product_man_region 
+-- można użyć ORDER BY wewnątrz funkcji string_agg() - otrzymujemy alfabetyczną 
+-- kolejność kodów produktów wewnątrz rekordu
+   SELECT pmr.region_name,
+          string_agg(product_code, ', ' ORDER BY product_code) product_code
+     FROM products p
+LEFT JOIN product_manufactured_region pmr ON pmr.id = p.product_man_region 
  GROUP BY pmr.region_name;
 
 -- 3. Wyświetl ilość sprzedanych produktów COUNT(s.sal_prd_id), które wzięły udział w
