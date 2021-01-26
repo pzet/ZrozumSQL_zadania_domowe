@@ -60,14 +60,66 @@ ORDER BY sum_of_sales DESC;
 --    PRODUCT_MANUFACTURED_REGION). Do danych wynikowych dołóż kolumnę z
 --    grupą rekordów korzystając ze składni GROUPING.
 
+
+  SELECT p.product_code,
+         EXTRACT(YEAR FROM p.manufactured_date) prod_year,
+         pmr.region_name,
+         GROUPING(p.product_code, EXTRACT(YEAR FROM p.manufactured_date), pmr.region_name),
+         avg(p.product_quantity) avg_prod_quantity
+    FROM products p
+    JOIN product_manufactured_region pmr ON p.product_man_region = pmr.id 
+GROUP BY GROUPING SETS (p.product_code, EXTRACT(YEAR FROM p.manufactured_date), pmr.region_name);
+-- dlaczego grupy są 3, 5, 6?
+
+-- dlaczego to podzapytanie (modyfikacja GROUPING SETS) zwraca zupełnie inny wynik?
+  SELECT p.product_code,
+         EXTRACT(YEAR FROM p.manufactured_date) prod_year,
+         pmr.region_name,
+         GROUPING(p.product_code, EXTRACT(YEAR FROM p.manufactured_date), pmr.region_name),
+         avg(p.product_quantity) avg_prod_quantity
+    FROM products p
+    JOIN product_manufactured_region pmr ON p.product_man_region = pmr.id 
+GROUP BY GROUPING SETS ((p.product_code, EXTRACT(YEAR FROM p.manufactured_date), pmr.region_name));
+
+---- dlaczego dodanie pustego GROUPING SETu na końcu powoduje powstanie rekordu o wartości 7?
+  SELECT p.product_code,
+         EXTRACT(YEAR FROM p.manufactured_date) prod_year,
+         pmr.region_name,
+         GROUPING(p.product_code, EXTRACT(YEAR FROM p.manufactured_date), pmr.region_name),
+         avg(p.product_quantity) avg_prod_quantity
+    FROM products p
+    JOIN product_manufactured_region pmr ON p.product_man_region = pmr.id 
+GROUP BY GROUPING SETS ((p.product_code, EXTRACT(YEAR FROM p.manufactured_date), pmr.region_name), 
+                        ());
+
 -- 6. Dla każdego PRODUCT_NAME oblicz sumę ilości jednostek w podziale na region_name
 --    z tabeli PRODUCT_MANUFACTURED_REGION. Skorzystaj z funkcji okna.
 --    W wynikach wyświetl: PRODUCT_NAME, PRODUCT_CODE,
 --    MANUFACTURED_DATE, PRODUCT_MAN_REGION, REGION_NAME i obliczoną
 --    sumę.
 
+SELECT p.product_name,
+       p.product_code,
+       p.manufactured_date,
+       p.product_man_region,
+       pmr.region_name,
+       sum(p.product_quantity) OVER (PARTITION BY pmr.region_name)
+FROM products p
+LEFT JOIN product_manufactured_region pmr ON pmr.id = p.product_man_region;
+
 -- 7. Na podstawie zapytania i wyników z zadania 6. Stwórz ranking według posiadanej ilości
 --    produktów od największej do najmniejszej, w taki sposób, aby w rankingu nie było
 --    brakujących elementów (liczb). W wyniku wyświetl te produkty, których ilość jest 2
 --    największą ilością. Atrybuty do wyświetlenia, PRODUCT_NAME, REGION_NAME,
---suma ilości per region (obliczona w zadaniu 6)
+--    suma ilości per region (obliczona w zadaniu 6)
+
+SELECT tt.*,
+       dense_rank() OVER (ORDER BY tt.sum_prod) prod_quant_rank
+FROM (   
+         SELECT p.product_name,
+                pmr.region_name,
+                sum(p.product_quantity) OVER (PARTITION BY pmr.region_name) sum_prod
+           FROM products p
+      LEFT JOIN product_manufactured_region pmr ON pmr.id = p.product_man_region
+     ) tt;
+
