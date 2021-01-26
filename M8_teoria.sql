@@ -48,6 +48,13 @@ GROUP BY (pmr.region_name, p.product_name);
 --    nowy atrybut ROK_MIESIAC stworzony na podstawie kolumny SAL_DATE. Dane
 --    wynikowe posortuj od największej do najmniejszej sprzedaży.
 
+  SELECT EXTRACT(YEAR FROM s.sal_date) || '_' || EXTRACT(MONTH FROM s.sal_date) year_month,
+         sum(s.sal_value) sum_of_sales
+    FROM sales s
+GROUP BY year_month
+ORDER BY sum_of_sales DESC;
+
+
 -- 5. Korzystając z konstrukcji GROUPING SETS oblicz średnią ilość jednostek produktów w
 --    grupach - kod produktu (PRODUCT_CODE), rok produkcji (na podstawie atrybutu
 --    MANUFACTURED_DATE) oraz regionu produkcji (REGION_NAME z tabeli
