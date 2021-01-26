@@ -98,13 +98,13 @@ GROUP BY GROUPING SETS ((p.product_code, EXTRACT(YEAR FROM p.manufactured_date),
 --    MANUFACTURED_DATE, PRODUCT_MAN_REGION, REGION_NAME i obliczoną
 --    sumę.
 
-SELECT p.product_name,
-       p.product_code,
-       p.manufactured_date,
-       p.product_man_region,
-       pmr.region_name,
-       sum(p.product_quantity) OVER (PARTITION BY pmr.region_name)
-FROM products p
+   SELECT p.product_name,
+          p.product_code,
+          p.manufactured_date,
+          p.product_man_region,
+          pmr.region_name,
+          sum(p.product_quantity) OVER (PARTITION BY (p.product_name, pmr.region_name))
+     FROM products p
 LEFT JOIN product_manufactured_region pmr ON pmr.id = p.product_man_region;
 
 -- 7. Na podstawie zapytania i wyników z zadania 6. Stwórz ranking według posiadanej ilości
@@ -114,12 +114,12 @@ LEFT JOIN product_manufactured_region pmr ON pmr.id = p.product_man_region;
 --    suma ilości per region (obliczona w zadaniu 6)
 
 SELECT tt.*,
-       dense_rank() OVER (ORDER BY tt.sum_prod) prod_quant_rank
-FROM (   
-         SELECT p.product_name,
-                pmr.region_name,
-                sum(p.product_quantity) OVER (PARTITION BY pmr.region_name) sum_prod
-           FROM products p
-      LEFT JOIN product_manufactured_region pmr ON pmr.id = p.product_man_region
-     ) tt;
+       dense_rank() OVER (ORDER BY tt.sum_prod DESC) prod_quant_rank
+  FROM (   
+           SELECT p.product_name,
+                  pmr.region_name,
+                  sum(p.product_quantity) OVER (PARTITION BY (p.product_name, pmr.region_name)) sum_prod
+             FROM products p
+        LEFT JOIN product_manufactured_region pmr ON pmr.id = p.product_man_region
+       ) tt;
 
