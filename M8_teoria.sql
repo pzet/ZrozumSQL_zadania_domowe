@@ -54,7 +54,6 @@ GROUP BY (pmr.region_name, p.product_name);
 GROUP BY year_month
 ORDER BY sum_of_sales DESC;
 
-
 -- 5. Korzystając z konstrukcji GROUPING SETS oblicz średnią ilość jednostek produktów w
 --    grupach - kod produktu (PRODUCT_CODE), rok produkcji (na podstawie atrybutu
 --    MANUFACTURED_DATE) oraz regionu produkcji (REGION_NAME z tabeli
