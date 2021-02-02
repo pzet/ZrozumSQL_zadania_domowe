@@ -44,6 +44,7 @@ LEFT JOIN product_manufactured_region pmr ON pmr.id = p.product_man_region
 	                                    AND pmr.region_name = 'EMEA'
 GROUP BY (pmr.region_name, p.product_name);
 
+
 -- 4. Wyświetl sumę sprzedaży na podstawie danych sprzedażowych (SALES) w podziale na
 --    nowy atrybut ROK_MIESIAC stworzony na podstawie kolumny SAL_DATE. Dane
 --    wynikowe posortuj od największej do najmniejszej sprzedaży.
@@ -64,7 +65,9 @@ ORDER BY sum_of_sales DESC;
   SELECT p.product_code,
          EXTRACT(YEAR FROM p.manufactured_date) prod_year,
          pmr.region_name,
-         GROUPING(p.product_code, EXTRACT(YEAR FROM p.manufactured_date), pmr.region_name),
+         GROUPING(p.product_code, 
+                  EXTRACT(YEAR FROM p.manufactured_date), 
+                  pmr.region_name),
          avg(p.product_quantity) avg_prod_quantity
     FROM products p
     JOIN product_manufactured_region pmr ON p.product_man_region = pmr.id 
@@ -75,23 +78,12 @@ GROUP BY GROUPING SETS (p.product_code, EXTRACT(YEAR FROM p.manufactured_date), 
   SELECT p.product_code,
          EXTRACT(YEAR FROM p.manufactured_date) prod_year,
          pmr.region_name,
-         GROUPING(p.product_code, EXTRACT(YEAR FROM p.manufactured_date), pmr.region_name),
+         GROUPING(p.product_code, EXTRACT(YEAR FROM p.manufactured_date), 
+                  pmr.region_name),
          avg(p.product_quantity) avg_prod_quantity
     FROM products p
     JOIN product_manufactured_region pmr ON p.product_man_region = pmr.id 
 GROUP BY GROUPING SETS ((p.product_code, EXTRACT(YEAR FROM p.manufactured_date), pmr.region_name));
-
----- dlaczego dodanie pustego GROUPING SETu na końcu powoduje powstanie rekordu o wartości 7?
-  SELECT p.product_code,
-         EXTRACT(YEAR FROM p.manufactured_date) prod_year,
-         pmr.region_name,
-         GROUPING(p.product_code, EXTRACT(YEAR FROM p.manufactured_date), pmr.region_name),
-         avg(p.product_quantity) avg_prod_quantity
-    FROM products p
-    JOIN product_manufactured_region pmr ON p.product_man_region = pmr.id 
-GROUP BY GROUPING SETS ((p.product_code, EXTRACT(YEAR FROM p.manufactured_date), pmr.region_name), 
-                        ());
-
 -- 6. Dla każdego PRODUCT_NAME oblicz sumę ilości jednostek w podziale na region_name
 --    z tabeli PRODUCT_MANUFACTURED_REGION. Skorzystaj z funkcji okna.
 --    W wynikach wyświetl: PRODUCT_NAME, PRODUCT_CODE,
@@ -122,4 +114,4 @@ SELECT tt.*,
              FROM products p
         LEFT JOIN product_manufactured_region pmr ON pmr.id = p.product_man_region
        ) tt;
-
+--
