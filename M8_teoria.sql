@@ -42,7 +42,7 @@ LEFT JOIN product_manufactured_region pmr ON pmr.id = p.product_man_region
     JOIN products p ON p.id = s.sal_prd_id
     JOIN product_manufactured_region pmr ON pmr.id = p.product_man_region 
 	                                    AND pmr.region_name = 'EMEA'
-GROUP BY (pmr.region_name, p.product_name);
+GROUP BY pmr.region_name, p.product_name;
 
 
 -- 4. Wyświetl sumę sprzedaży na podstawie danych sprzedażowych (SALES) w podziale na
@@ -73,6 +73,17 @@ ORDER BY sum_of_sales DESC;
     JOIN product_manufactured_region pmr ON p.product_man_region = pmr.id 
 GROUP BY GROUPING SETS (p.product_code, EXTRACT(YEAR FROM p.manufactured_date), pmr.region_name);
 -- dlaczego grupy są 3, 5, 6?
+-- z dokumentacji do GROUPING - nie zwraca numeru, ale maskę bitów!
+--W GROUPING mamy tutaj 3 atrybuty, więc potencjalnie także 3 bity
+--0 - product_code, 0 - manufactured_date, 0 - region_name
+--000 - 0
+--001 - 1 (grupowanie tylko po region_name)
+--010 - 2
+--011 - 3
+--100 - 4
+--101 - 5
+--110 - 6 (grupowanie po product_code i manufactured_date)
+--111 - 7
 
 -- dlaczego to podzapytanie (modyfikacja GROUPING SETS) zwraca zupełnie inny wynik?
   SELECT p.product_code,
@@ -84,6 +95,9 @@ GROUP BY GROUPING SETS (p.product_code, EXTRACT(YEAR FROM p.manufactured_date), 
     FROM products p
     JOIN product_manufactured_region pmr ON p.product_man_region = pmr.id 
 GROUP BY GROUPING SETS ((p.product_code, EXTRACT(YEAR FROM p.manufactured_date), pmr.region_name));
+--obłożenie dodatkowymi nawiasami sprawia, że ostatni fragment traktowany jest jako jeden GROUPING
+--z 3ech podgrup robi się jedna podgrupa - z GROUPING SET robi się zwykły GROUP BY
+
 -- 6. Dla każdego PRODUCT_NAME oblicz sumę ilości jednostek w podziale na region_name
 --    z tabeli PRODUCT_MANUFACTURED_REGION. Skorzystaj z funkcji okna.
 --    W wynikach wyświetl: PRODUCT_NAME, PRODUCT_CODE,
@@ -95,7 +109,7 @@ GROUP BY GROUPING SETS ((p.product_code, EXTRACT(YEAR FROM p.manufactured_date),
           p.manufactured_date,
           p.product_man_region,
           pmr.region_name,
-          sum(p.product_quantity) OVER (PARTITION BY (p.product_name, pmr.region_name))
+          sum(p.product_quantity) OVER (PARTITION BY pmr.region_name)
      FROM products p
 LEFT JOIN product_manufactured_region pmr ON pmr.id = p.product_man_region;
 
@@ -110,8 +124,23 @@ SELECT tt.*,
   FROM (   
            SELECT p.product_name,
                   pmr.region_name,
-                  sum(p.product_quantity) OVER (PARTITION BY (p.product_name, pmr.region_name)) sum_prod
+                  sum(p.product_quantity) OVER (PARTITION BY pmr.region_name) sum_prod
              FROM products p
         LEFT JOIN product_manufactured_region pmr ON pmr.id = p.product_man_region
        ) tt;
---
+-- UWAGA! Aby użyć window function w WHERE, trzeba użyć CTE:
+
+  WITH products_ranked AS (
+	SELECT tt.*,
+       	   dense_rank() OVER (ORDER BY tt.sum_prod DESC) prod_quant_rank
+      FROM (   
+           SELECT p.product_name,
+                  pmr.region_name,
+                  sum(p.product_quantity) OVER (PARTITION BY pmr.region_name) sum_prod
+             FROM products p
+        LEFT JOIN product_manufactured_region pmr ON pmr.id = p.product_man_region
+	) tt
+)
+SELECT * 
+  FROM products_ranked 
+ WHERE prod_quant_rank = 2;
