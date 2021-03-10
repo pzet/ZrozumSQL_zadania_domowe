@@ -21,7 +21,7 @@ CREATE OR REPLACE VIEW products_Q1_2020_EMEA AS
     	      AND EXTRACT(QUARTER FROM sal_date) = 1;
 -- w tabeli sales mam dane tylko z pierwszego kwartału, dlatego wybrałem go w ćwiczeniu
 
-SELECT * FROM products_Q1_2020_EMEA
+SELECT * FROM products_Q1_2020_EMEA;
 
 --DROP VIEW * FROM products_Q1_2020_EMEA
    
@@ -68,9 +68,10 @@ REFRESH MATERIALIZED VIEW CONCURRENTLY products_cumsum_prd_code;
 
    SELECT p.product_code,
 	      pmr.region_name,
-	      p.product_name 
+	      array_agg(p.product_name)
      FROM products p 
-LEFT JOIN product_manufactured_region pmr ON pmr.id = p.product_man_region; 
+LEFT JOIN product_manufactured_region pmr ON pmr.id = p.product_man_region
+ GROUP BY p.product_code, pmr.region_name; 
 
 -- 4. Dla zapytania z zdania 3 stwórz nową tabelę korzystając z konstrukcji CTAS. Dodaj
 --    dodatkowo do nowej tabeli 1 kolumnę zawierającą wartość TRUE lub FALSE obliczaną
@@ -100,7 +101,6 @@ SELECT *
 --      wartości NOW()
 --    - atrybut created_date powinien być usunięty
 
-SELECT * FROM sales 
 
 CREATE TABLE IF NOT EXISTS sales_archive (
 	id SERIAL NOT NULL,
@@ -144,11 +144,11 @@ CREATE TRIGGER sales_archive_trigger
 -- sprawdzenie, czy funkcja istnieje
 SELECT *
   FROM information_schema."routines" r 
- WHERE specific_name LIKE '%sales_archive_function%'
+ WHERE specific_name LIKE '%sales_archive_function%';
 	
 -- sprawdzenie, czy trigger istnieje
 SELECT *
-  FROM information_schema.triggers t 
+  FROM information_schema.triggers t;
   
 -- usunięcie rekordów z tabeli sales (data dopasowana do dat w mojej tabeli: 2021-3)
 DELETE 
