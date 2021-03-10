@@ -155,6 +155,11 @@ DELETE
   FROM sales s
  WHERE CONCAT(EXTRACT(YEAR FROM s.created_date), '-', EXTRACT(MONTH FROM s.created_date)) = '2021-3';
 
+-- sprawdzenie, czy rekordy z 2021-3 zostały usunięte
+SELECT count(*)
+  FROM sales s
+ WHERE CONCAT(EXTRACT(YEAR FROM s.created_date), '-', EXTRACT(MONTH FROM s.created_date)) = '2021-3';
+
 -- sprawdzenie, czy trigger dodał rekordy do sales_archive
 SELECT *
   FROM sales_archive;
