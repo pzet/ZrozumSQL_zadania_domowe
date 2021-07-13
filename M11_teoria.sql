@@ -4,17 +4,18 @@
 --    (skorzystaj ze składni INTERVAL). W wyniku wyświetl wszystkie atrybuty sprzedażowe
 --    i dodatkowo nazwę i kod produktu oraz region, w którym produkt powstał.
 --    Dane wyświetl wyłącznie dla kodu produktu równego PRD8
-
-
-   SELECT *,
+  
+   SELECT s.*,
 		  p.product_name,
 		  p.product_code,
 		  pmr.region_name 
      FROM sales s
-LEFT JOIN products p ON s.id = p.id
+LEFT JOIN products p ON s.sal_prd_id = p.id
 LEFT JOIN product_manufactured_region pmr ON p.product_man_region = pmr.id
-    WHERE s.sal_date BETWEEN (now()::date - INTERVAL '2 months') AND now()::date;
+    WHERE s.sal_date > current_date - INTERVAL '2 months'
+      AND p.product_code = 'PRD8';
    
+
 -- 2. Korzystając z opcji EXPLAIN ANALYZE, przeanalizuj plan zapytania dla zapytania z
 --    zadania 1. Rozpisz, z jakich elementów się składa: rodzaj użytego algorytmu, koszty na
 --    poszczególnych etapach, jaki rodzaj pobierania danych został wykorzystany
@@ -23,61 +24,57 @@ LEFT JOIN product_manufactured_region pmr ON p.product_man_region = pmr.id
 DISCARD ALL;   
    
 EXPLAIN ANALYZE
-   SELECT *,
+   SELECT s.*,
 		  p.product_name,
-		  p.product_code
+		  p.product_code,
+		  pmr.region_name 
      FROM sales s
-LEFT JOIN products p ON s.id = p.id
+LEFT JOIN products p ON s.sal_prd_id = p.id
 LEFT JOIN product_manufactured_region pmr ON p.product_man_region = pmr.id
-    WHERE s.sal_date BETWEEN (now()::date - INTERVAL '2 months') AND now()::date;
+    WHERE s.sal_date > current_date - INTERVAL '2 months'
+      AND p.product_code = 'PRD8';
+     
+--QUERY PLAN                                                                                                                                   |
+-----------------------------------------------------------------------------------------------------------------------------------------------|
+--Hash Join  (cost=30.79..348.79 rows=142 width=372) (actual time=0.071..6.141 rows=1041 loops=1)                                              |
+--  Hash Cond: (s.sal_prd_id = p.id)                                                                                                           |
+--  ->  Seq Scan on sales s  (cost=0.00..279.00 rows=10000 width=48) (actual time=0.022..4.585 rows=10000 loops=1)                             |
+--        Filter: (sal_date > (CURRENT_DATE - '2 mons'::interval))                                                                             |
+--  ->  Hash  (cost=30.75..30.75 rows=3 width=328) (actual time=0.040..0.042 rows=1 loops=1)                                                   |
+--        Buckets: 1024  Batches: 1  Memory Usage: 9kB                                                                                         |
+--        ->  Hash Right Join  (cost=12.89..30.75 rows=3 width=328) (actual time=0.033..0.039 rows=1 loops=1)                                  |
+--              Hash Cond: (pmr.id = p.product_man_region)                                                                                     |
+--              ->  Seq Scan on product_manufactured_region pmr  (cost=0.00..15.70 rows=570 width=72) (actual time=0.008..0.009 rows=5 loops=1)|
+--              ->  Hash  (cost=12.88..12.88 rows=1 width=264) (actual time=0.019..0.019 rows=1 loops=1)                                       |
+--                    Buckets: 1024  Batches: 1  Memory Usage: 9kB                                                                             |
+--                    ->  Seq Scan on products p  (cost=0.00..12.88 rows=1 width=264) (actual time=0.013..0.014 rows=1 loops=1)                |
+--                          Filter: ((product_code)::text = 'PRD8'::text)                                                                      |
+--                          Rows Removed by Filter: 9                                                                                          |
+--Planning Time: 0.222 ms                                                                                                                      |
+--Execution Time: 6.205 ms                                                                                                                     |                                                                                                                   |                                                                                                |
    
---QUERY PLAN                                                                                                                        |
-------------------------------------------------------------------------------------------------------------------------------------|
---Hash Right Join  (cost=301.24..322.30 rows=108 width=794) (actual time=7.345..8.936 rows=10000 loops=1)                           |
---  Hash Cond: (pmr.id = p.product_man_region)                                                                                      |
---  ->  Seq Scan on product_manufactured_region pmr  (cost=0.00..15.70 rows=570 width=114) (actual time=0.015..0.016 rows=5 loops=1)|
---  ->  Hash  (cost=300.77..300.77 rows=38 width=424) (actual time=7.321..7.322 rows=10000 loops=1)                                 |
---        Buckets: 16384 (originally 1024)  Batches: 1 (originally 1)  Memory Usage: 1066kB                                         |
---        ->  Hash Left Join  (cost=15.18..300.77 rows=38 width=424) (actual time=0.032..5.463 rows=10000 loops=1)                  |
---              Hash Cond: (s.id = p.id)                                                                                            |
---              ->  Seq Scan on sales s  (cost=0.00..284.18 rows=33 width=100) (actual time=0.016..3.878 rows=10000 loops=1)        |
---                    Filter: ((sal_date <= (now())::date) AND (sal_date >= ((now())::date - '2 mons'::interval)))                  |
---              ->  Hash  (cost=12.30..12.30 rows=230 width=324) (actual time=0.010..0.011 rows=10 loops=1)                         |
---                    Buckets: 1024  Batches: 1  Memory Usage: 9kB                                                                  |
---                    ->  Seq Scan on products p  (cost=0.00..12.30 rows=230 width=324) (actual time=0.006..0.007 rows=10 loops=1)  |
---Planning Time: 0.169 ms                                                                                                           |
---Execution Time: 9.281 ms                                                                                                          |
-   
---Hash RIGHT JOIN (cost=59115.18..68030.27 rows=2850000 width=486)
---|_Hash RIGHT JOIN (cost=15.18..55.25 rows=656 width=438) dla warunku pmr.id = p.product_man_region
---|  |_Skan sekwencyjny na tabeli product_manufactured_region (cost=0.00..15.70 rows=570 width=114)
---|  |_Funkcja hashujaca (cost=12.30..12.30 rows=230 width=324)
---|    |_Skan sekwencyjny na tabeli products (cost=0.00..12.30 rows=230 width=324)
---|_Funkcja hashujaca (cost=37810.00..37810.00 rows=1000000 width=48)
---  |_Skan sekwencyjny na tabeli sales (cost=0.00..37810.00 rows=1000000 width=48)
---    |_Filtrowanie wyników dla zadanego warunku 
+--1. Hash Join, koszt startowy (KS) 30.79, koszt całkowity (KC) 348.79 dla warunku s.id = p.id
+--2. Skan sekwencyjny na tabeli sales, KS 0, KC 279; filtrowanie atrybutów sal_date
+--3. Funkcja hashująca, KS 30.75, KC 30.75 (tutaj widać redukcję liczby wierszy do trzech)
+--4. Hash Right Join, KS 12.98, KC 30.75 dla warunku pmr.id = p.product_man_region 
+--  **dlaczego jest tutaj right join? od czego zależy jaki join zostanie użyty?**
+--5. Skan sekwencyjny na tabeli product_manufactured_region, KS 0.00, KC 15.70
+--6. Funkcja hashująca, KS 12.88, KC 12.88
+--7. Skan sekwencyjny na tabeli products, KS 0.00, KC 12.88; filtrowanie atrubutów product_code
 
-
---DISCARD ALL;
---EXPLAIN ANALYZE 
---WITH sales_2_months_old AS (
---	SELECT *
---	FROM sales s
---	WHERE s.sal_date BETWEEN now()::date - INTERVAL '2 months' AND now() ::date
---)
---SELECT *
---FROM sales_2_months_old s_2m
---LEFT JOIN products p ON p.id = s_2m.id
---LEFT JOIN product_manufactured_region pmr ON pmr.id = p.product_man_region;
-
+     
 -- 3. Oblicz miarę selektywności dla atrybutu PRODUCT_CODE z tabeli PRODUCTS.
 
 SELECT count(DISTINCT product_code) distinct_products,
 	   count(*) rows_in_table,
 	   count(DISTINCT product_code)::float/count(*) selectivity_index
   FROM products;
+ 
+-- selectivity_index = 0.8
 
 -- 4. Dodaj indeks do tabeli PRODUCTS na polu PRODUCT_CODE typu BTREE.
+
+DROP INDEX IF EXISTS idx_product_code;
 
 CREATE INDEX idx_product_code
           ON products
@@ -85,40 +82,44 @@ CREATE INDEX idx_product_code
  
 -- 5. Zweryfikuj plan wykonania zapytania dla zapytania z zadania 1 po dodaniu indeksu. Czy
 --    indeks został użyty?
+
 DISCARD ALL;
-DROP INDEX IF EXISTS idx_product_code;
-DROP INDEX IF EXISTS idx_sal_date;
 
 EXPLAIN ANALYZE
-   SELECT *,
+   SELECT s.*,
 		  p.product_name,
 		  p.product_code,
 		  pmr.region_name 
      FROM sales s
-LEFT JOIN products p ON s.id = p.id
+LEFT JOIN products p ON s.sal_prd_id = p.id
 LEFT JOIN product_manufactured_region pmr ON p.product_man_region = pmr.id
-    WHERE s.sal_date BETWEEN (now()::date - INTERVAL '2 months') AND now()::date;
+    WHERE s.sal_date > current_date - INTERVAL '2 months'
+      AND p.product_code = 'PRD8';
    
---QUERY PLAN                                                                                                                                    |
-------------------------------------------------------------------------------------------------------------------------------------------------|
---Hash Left Join  (cost=19.69..461.47 rows=28500 width=810) (actual time=0.049..6.048 rows=10000 loops=1)                                       |
---  Hash Cond: (s.id = p.id)                                                                                                                    |
---  ->  Seq Scan on sales s  (cost=0.00..379.00 rows=10000 width=48) (actual time=0.013..4.042 rows=10000 loops=1)                              |
---        Filter: ((sal_date <= (now())::date) AND (sal_date >= ((now())::date - '2 mons'::interval)))                                          |
---  ->  Hash  (cost=19.34..19.34 rows=28 width=438) (actual time=0.030..0.031 rows=10 loops=1)                                                  |
---        Buckets: 1024  Batches: 1  Memory Usage: 10kB                                                                                         |
---        ->  Hash Right Join  (cost=1.23..19.34 rows=28 width=438) (actual time=0.018..0.026 rows=10 loops=1)                                  |
---              Hash Cond: (pmr.id = p.product_man_region)                                                                                      |
---              ->  Seq Scan on product_manufactured_region pmr  (cost=0.00..15.70 rows=570 width=114) (actual time=0.005..0.005 rows=5 loops=1)|
---              ->  Hash  (cost=1.10..1.10 rows=10 width=324) (actual time=0.010..0.010 rows=10 loops=1)                                        |
---                    Buckets: 1024  Batches: 1  Memory Usage: 9kB                                                                              |
---                    ->  Seq Scan on products p  (cost=0.00..1.10 rows=10 width=324) (actual time=0.006..0.007 rows=10 loops=1)                |
---Planning Time: 0.457 ms                                                                                                                       |
---Execution Time: 6.284 ms                                                                                                                      |
+--QUERY PLAN                                                                                                                                   |
+-----------------------------------------------------------------------------------------------------------------------------------------------|
+--Hash Join  (cost=19.04..390.54 rows=2850 width=372) (actual time=0.104..7.518 rows=1041 loops=1)                                             |
+--  Hash Cond: (s.sal_prd_id = p.id)                                                                                                           |
+--  ->  Seq Scan on sales s  (cost=0.00..279.00 rows=10000 width=48) (actual time=0.028..5.581 rows=10000 loops=1)                             |
+--        Filter: (sal_date > (CURRENT_DATE - '2 mons'::interval))                                                                             |
+--  ->  Hash  (cost=19.00..19.00 rows=3 width=328) (actual time=0.062..0.064 rows=1 loops=1)                                                   |
+--        Buckets: 1024  Batches: 1  Memory Usage: 9kB                                                                                         |
+--        ->  Hash Right Join  (cost=1.14..19.00 rows=3 width=328) (actual time=0.051..0.060 rows=1 loops=1)                                   |
+--              Hash Cond: (pmr.id = p.product_man_region)                                                                                     |
+--              ->  Seq Scan on product_manufactured_region pmr  (cost=0.00..15.70 rows=570 width=72) (actual time=0.011..0.012 rows=5 loops=1)|
+--              ->  Hash  (cost=1.13..1.13 rows=1 width=264) (actual time=0.031..0.031 rows=1 loops=1)                                         |
+--                    Buckets: 1024  Batches: 1  Memory Usage: 9kB                                                                             |
+--                    ->  Seq Scan on products p  (cost=0.00..1.13 rows=1 width=264) (actual time=0.022..0.024 rows=1 loops=1)                 |
+--                          Filter: ((product_code)::text = 'PRD8'::text)                                                                      |
+--                          Rows Removed by Filter: 9                                                                                          |
+--Planning Time: 0.278 ms                                                                                                                      |
+--Execution Time: 7.607 ms                                                                                                                     |                                                                                                                    |
    
--- index nie został użyty, ale z jakiegoś powodu hash right join zmienił się na hash left join?
+-- index nie został wykorzystany
 
 -- 6. Dodaj indeks dla daty sprzedaży (SAL_DATE) na tabeli SALES. 
+
+DROP INDEX IF EXISTS idx_sal_date;
 
 CREATE INDEX idx_sal_date
           ON sales
@@ -126,35 +127,42 @@ CREATE INDEX idx_sal_date
       
 -- 7. Zweryfikuj plan wykonania zapytania dla zapytania z zadania 1 po dodaniu indeksu. Czy
 --    indeks dla SAL_DATE lub PRODUCT_CODE został użyty?
+
 DISCARD ALL;
+
 EXPLAIN ANALYZE
-   SELECT *,
+   SELECT s.*,
 		  p.product_name,
 		  p.product_code,
 		  pmr.region_name 
      FROM sales s
-LEFT JOIN products p ON s.id = p.id
+LEFT JOIN products p ON s.sal_prd_id = p.id
 LEFT JOIN product_manufactured_region pmr ON p.product_man_region = pmr.id
-    WHERE s.sal_date BETWEEN (now()::date - INTERVAL '2 months') AND now()::date;
+    WHERE s.sal_date > current_date - INTERVAL '2 months'
+      AND p.product_code = 'PRD8';
 
-   
---QUERY PLAN                                                                                                                                    |
-------------------------------------------------------------------------------------------------------------------------------------------------|
---Hash Left Join  (cost=19.69..461.47 rows=28500 width=810) (actual time=0.043..5.393 rows=10000 loops=1)                                       |
---  Hash Cond: (s.id = p.id)                                                                                                                    |
---  ->  Seq Scan on sales s  (cost=0.00..379.00 rows=10000 width=48) (actual time=0.012..3.611 rows=10000 loops=1)                              |
---        Filter: ((sal_date <= (now())::date) AND (sal_date >= ((now())::date - '2 mons'::interval)))                                          |
---  ->  Hash  (cost=19.34..19.34 rows=28 width=438) (actual time=0.027..0.029 rows=10 loops=1)                                                  |
---        Buckets: 1024  Batches: 1  Memory Usage: 10kB                                                                                         |
---        ->  Hash Right Join  (cost=1.23..19.34 rows=28 width=438) (actual time=0.016..0.024 rows=10 loops=1)                                  |
---              Hash Cond: (pmr.id = p.product_man_region)                                                                                      |
---              ->  Seq Scan on product_manufactured_region pmr  (cost=0.00..15.70 rows=570 width=114) (actual time=0.004..0.005 rows=5 loops=1)|
---              ->  Hash  (cost=1.10..1.10 rows=10 width=324) (actual time=0.009..0.010 rows=10 loops=1)                                        |
---                    Buckets: 1024  Batches: 1  Memory Usage: 9kB                                                                              |
---                    ->  Seq Scan on products p  (cost=0.00..1.10 rows=10 width=324) (actual time=0.005..0.006 rows=10 loops=1)                |
---Planning Time: 0.467 ms                                                                                                                       |
---Execution Time: 5.610 ms                                                                                                                      |
-                                                                                                                 |
+     
+--QUERY PLAN                                                                                                                                   |
+-----------------------------------------------------------------------------------------------------------------------------------------------|
+--Hash Join  (cost=19.04..390.54 rows=2850 width=372) (actual time=0.089..7.526 rows=1041 loops=1)                                             |
+--  Hash Cond: (s.sal_prd_id = p.id)                                                                                                           |
+--  ->  Seq Scan on sales s  (cost=0.00..279.00 rows=10000 width=48) (actual time=0.025..5.593 rows=10000 loops=1)                             |
+--        Filter: (sal_date > (CURRENT_DATE - '2 mons'::interval))                                                                             |
+--  ->  Hash  (cost=19.00..19.00 rows=3 width=328) (actual time=0.050..0.055 rows=1 loops=1)                                                   |
+--        Buckets: 1024  Batches: 1  Memory Usage: 9kB                                                                                         |
+--        ->  Hash Right Join  (cost=1.14..19.00 rows=3 width=328) (actual time=0.039..0.051 rows=1 loops=1)                                   |
+--              Hash Cond: (pmr.id = p.product_man_region)                                                                                     |
+--              ->  Seq Scan on product_manufactured_region pmr  (cost=0.00..15.70 rows=570 width=72) (actual time=0.009..0.010 rows=5 loops=1)|
+--              ->  Hash  (cost=1.13..1.13 rows=1 width=264) (actual time=0.023..0.024 rows=1 loops=1)                                         |
+--                    Buckets: 1024  Batches: 1  Memory Usage: 9kB                                                                             |
+--                    ->  Seq Scan on products p  (cost=0.00..1.13 rows=1 width=264) (actual time=0.017..0.018 rows=1 loops=1)                 |
+--                          Filter: ((product_code)::text = 'PRD8'::text)                                                                      |
+--                          Rows Removed by Filter: 9                                                                                          |
+--Planning Time: 0.849 ms                                                                                                                      |
+--Execution Time: 7.620 ms           
+
+-- w tym przypadku również indeksy nie zostąły wykorzystane
+     
 -- 8. Na podstawie instrukcji poniżej zweryfikuj czy partycjonowanie tabeli ma istotny wpływ
 --    na plan wykonania zapytania i operację INSERT. (ten skrypt znajduje się również w linku
 --    powyżej).
@@ -202,14 +210,15 @@ INSERT INTO sales (sal_description, sal_date, sal_value, sal_prd_id)
         	floor(random() * 10)+1::int            
        FROM generate_series(1, 1000000) s(i);    
       
---QUERY PLAN                                                                                                                                     |
--------------------------------------------------------------------------------------------------------------------------------------------------|
---Insert on sales  (cost=0.00..77500.00 rows=1000000 width=100) (actual time=5730.146..5730.146 rows=0 loops=1)                                  |
---  ->  Subquery Scan on "*SELECT*"  (cost=0.00..77500.00 rows=1000000 width=100) (actual time=84.769..3720.246 rows=1000000 loops=1)            |
---        ->  Function Scan on generate_series s  (cost=0.00..50000.00 rows=1000000 width=52) (actual time=84.705..1718.844 rows=1000000 loops=1)|
---Planning Time: 0.068 ms                                                                                                                        |
---Execution Time: 5732.281 ms                                                                                                                    |      
+--QUERY PLAN                                                                                                                                      |
+--------------------------------------------------------------------------------------------------------------------------------------------------|
+--Insert on sales  (cost=0.00..77500.00 rows=1000000 width=100) (actual time=19815.400..19815.402 rows=0 loops=1)                                 |
+--  ->  Subquery Scan on "*SELECT*"  (cost=0.00..77500.00 rows=1000000 width=100) (actual time=243.498..15614.266 rows=1000000 loops=1)           |
+--        ->  Function Scan on generate_series s  (cost=0.00..50000.00 rows=1000000 width=52) (actual time=243.334..7111.260 rows=1000000 loops=1)|
+--Planning Time: 0.136 ms                                                                                                                         |
+--Execution Time: 19821.403 ms                                                                                                                    |                                                                                                                 |      
 
+DISCARD ALL;      
 EXPLAIN ANALYZE
 INSERT INTO sales_partitioned (sal_description, sal_date, sal_value, sal_prd_id)
      SELECT left(md5(i::text), 15),
@@ -218,16 +227,16 @@ INSERT INTO sales_partitioned (sal_description, sal_date, sal_value, sal_prd_id)
         	floor(random() * 10)+1::int            
        FROM generate_series(1, 1000000) s(i);                                                                                                             
 
---QUERY PLAN                                                                                                                                     |
--------------------------------------------------------------------------------------------------------------------------------------------------|
---Insert on sales_partitioned  (cost=0.00..77500.00 rows=1000000 width=100) (actual time=6101.746..6101.746 rows=0 loops=1)                      |
---  ->  Subquery Scan on "*SELECT*"  (cost=0.00..77500.00 rows=1000000 width=100) (actual time=84.501..3770.475 rows=1000000 loops=1)            |
---        ->  Function Scan on generate_series s  (cost=0.00..50000.00 rows=1000000 width=52) (actual time=84.444..1741.772 rows=1000000 loops=1)|
---Planning Time: 0.076 ms                                                                                                                        |
---Execution Time: 6103.831 ms          
+      
+--QUERY PLAN                                                                                                                                      |
+--------------------------------------------------------------------------------------------------------------------------------------------------|
+--Insert on sales_partitioned  (cost=0.00..77500.00 rows=1000000 width=100) (actual time=19931.543..19931.546 rows=0 loops=1)                     |
+--  ->  Subquery Scan on "*SELECT*"  (cost=0.00..77500.00 rows=1000000 width=100) (actual time=308.016..15294.107 rows=1000000 loops=1)           |
+--        ->  Function Scan on generate_series s  (cost=0.00..50000.00 rows=1000000 width=52) (actual time=307.870..7057.309 rows=1000000 loops=1)|
+--Planning Time: 0.137 ms                                                                                                                         |
+--Execution Time: 19938.246 ms                                                                                                                    |        
 
--- W wyniku partycjonowania czas potrzebny na wykonanie operacji wydłużył się o ok. 400 ms,
--- ale wykonując kolejne próby można zauważyć, że najczęściej pojawia się wartość ok. 5700 ms,
--- a zatem zbliżona do zapytania bez partycjonowania.
--- Wniosek: partycjonowanie nie wpłynęło na szybkość wykonania zapytania.
+-- Czas wykonania dla tabeli bez i z partycjonowaniem jest w przybliżeniu taki sam.
+-- Na tej podstawie można wywnioskować, że w tym przypadku partycjonowanie nie wpłynęło
+-- ani na plan wykonania zapytania dla operajci INSERT, ani na czas jego wykonania.
 
