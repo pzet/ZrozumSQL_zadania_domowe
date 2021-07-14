@@ -54,13 +54,13 @@ LEFT JOIN product_manufactured_region pmr ON p.product_man_region = pmr.id
 --Execution Time: 6.205 ms                                                                                                                     |                                                                                                                   |                                                                                                |
    
 --1. Hash Join, koszt startowy (KS) 30.79, koszt całkowity (KC) 348.79 dla warunku s.id = p.id
---2. Skan sekwencyjny na tabeli sales, KS 0, KC 279; filtrowanie atrybutów sal_date
+--2. Skan sekwencyjny na tabeli sales, KS 0, KC 279; filtrowanie atrybutów sal_date; usunięto 3302 wierszy
 --3. Funkcja hashująca, KS 30.75, KC 30.75 (tutaj widać redukcję liczby wierszy do trzech)
 --4. Hash Right Join, KS 12.98, KC 30.75 dla warunku pmr.id = p.product_man_region 
 --  **dlaczego jest tutaj right join? od czego zależy jaki join zostanie użyty?**
 --5. Skan sekwencyjny na tabeli product_manufactured_region, KS 0.00, KC 15.70
 --6. Funkcja hashująca, KS 12.88, KC 12.88
---7. Skan sekwencyjny na tabeli products, KS 0.00, KC 12.88; filtrowanie atrubutów product_code
+--7. Skan sekwencyjny na tabeli products, KS 0.00, KC 12.88; filtrowanie atrubutów product_code, usunięto 9 wierszy
 
      
 -- 3. Oblicz miarę selektywności dla atrybutu PRODUCT_CODE z tabeli PRODUCTS.
