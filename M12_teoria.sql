@@ -128,7 +128,6 @@ GROUP BY c_name, c_mail, c_phone
 SELECT *,
        CASE WHEN c_mail IS NULL THEN 'unknown'
        ELSE 'known' END
---       regexp_matches(c_mail, '@(.*)$')::text
 FROM customers;
 
 SELECT c_mail,
